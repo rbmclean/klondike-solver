@@ -1,6 +1,7 @@
 #include "DeckGenerator.h"
 #include <cstddef>
 #include <algorithm>
+#include <stdexcept>
 
 //note: it's important the deck is initialized in order of decreasing priority
 //otherwise permutations can easily be skipped
@@ -10,6 +11,13 @@ DeckGenerator::DeckGenerator() : done(false) {
 	for(int suit = 0; suit <= Card::Suit::SuitMax; suit++)
 		for(int rank = 0; rank <= Card::Rank::RankMax; rank++)
 			prevDeck[i++] = Card(static_cast<Card::Rank>(rank), static_cast<Card::Suit>(suit));
+}
+
+DeckGenerator::DeckGenerator(std::string str) : done(false) {
+	if(str.length() != 2 * sizeof(prevDeck) / sizeof(prevDeck[0]))
+		throw std::invalid_argument("DeckGenerator constructor");
+	for(size_t i = 0; i < str.length() - 1; i += 2)
+		prevDeck[i / 2] = Card(str.substr(i, 2));
 }
 
 //create the state before permuting, so that the initial state is tested at least once

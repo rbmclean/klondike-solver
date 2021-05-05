@@ -39,6 +39,7 @@ public:
 	Rank getRank() const;
 	Suit getSuit() const;
 	Card(Rank r, Suit s);
+	Card(std::string str);
 	Card();
 	bool isSameColor(const Card &c) const;
 	bool operator<(const Card &c) const;

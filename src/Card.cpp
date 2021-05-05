@@ -1,5 +1,6 @@
 #include "Card.h"
 #include <cassert>
+#include <stdexcept>
 
 Card::Rank Card::getRank() const {
 	return rank;
@@ -10,6 +11,70 @@ Card::Suit Card::getSuit() const {
 }
 
 Card::Card(Rank r, Suit s) : rank(r), suit(s) {}
+
+Card::Card(std::string str){
+	if(str.length() != 2)
+		throw std::invalid_argument("Card constructor");
+	switch(str[0]){
+		case 'H':
+			suit = Suit::HEARTS;
+			break;
+		case 'S':
+			suit = Suit::SPADES;
+			break;
+		case 'C':
+			suit = Suit::CLUBS;
+			break;
+		case 'D':
+			suit = Suit::DIAMONDS;
+			break;
+		default:
+			throw std::invalid_argument("Card constructor");
+	}
+	switch(str[1]){
+		case 'A':
+			rank = Rank::ACE;
+			break;
+		case '2':
+			rank = Rank::TWO;
+			break;
+		case '3':
+			rank = Rank::THREE;
+			break;
+		case '4':
+			rank = Rank::FOUR;
+			break;
+		case '5':
+			rank = Rank::FIVE;
+			break;
+		case '6':
+			rank = Rank::SIX;
+			break;
+		case '7':
+			rank = Rank::SEVEN;
+			break;
+		case '8':
+			rank = Rank::EIGHT;
+			break;
+		case '9':
+			rank = Rank::NINE;
+			break;
+		case '0':
+			rank = Rank::TEN;
+			break;
+		case 'J':
+			rank = Rank::JACK;
+			break;
+		case 'Q':
+			rank = Rank::QUEEN;
+			break;
+		case 'K':
+			rank = Rank::KING;
+			break;
+		default:
+			throw std::invalid_argument("Card constructor");
+	}
+}
 
 //this constructor shouldn't be used, as what would a default card be?
 Card::Card() : rank(Rank::RankMax), suit(Suit::SuitMax) {}
