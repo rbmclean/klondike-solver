@@ -1,5 +1,5 @@
 #pragma once
-
+#include <string>
 class Card {
 
 public:
@@ -39,5 +39,8 @@ public:
 	Rank getRank() const;
 	Suit getSuit() const;
 	Card(Rank r, Suit s);
+	Card();
 	bool isSameColor(const Card &c) const;
+	bool operator<(const Card &c) const;
+	std::string getString() const;
 };
