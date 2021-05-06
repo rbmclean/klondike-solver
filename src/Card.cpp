@@ -88,6 +88,23 @@ bool Card::operator<(const Card &c) const {
 		c.suit * (Rank::RankMax + 1) + c.rank;
 }
 
+bool Card::canStartTableau() const {
+	return rank == Rank::KING;
+}
+
+bool Card::canStartFoundation() const {
+	return rank == Rank::ACE;
+}
+
+//c is the card this would be played on
+bool Card::canPlayOnTableau(const Card &c) const {
+	return !isSameColor(c) && rank == c.rank - 1;
+}
+
+bool Card::canPlayOnFoundation(const Card &c) const {
+	return suit == c.suit && rank == c.rank + 1;
+}
+
 std::string Card::getString() const {
 	std::string ret;
 	switch(suit){
