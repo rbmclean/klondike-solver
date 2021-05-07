@@ -14,6 +14,10 @@ GameState::GameState(Card const deck[(Card::Suit::SuitMax + 1) * (Card::Rank::Ra
 		visibleIndex[i] = i;
 	}
 	stock = std::vector<Card>(deck + deckIndex, deck + (Card::Suit::SuitMax + 1) * (Card::Rank::RankMax + 1));
+	for(size_t i = 0; i < MOVED_TO_WASTE && stock.size(); i++){
+		waste.push_back(stock.back());
+		stock.pop_back();
+	}
 }
 
 //TODO: filter out more worthless moves
@@ -25,7 +29,8 @@ std::vector<GameState> GameState::generateMoves() const {
 	if(!stock.size() && waste.size() > MOVED_TO_WASTE){
 		GameState tmp(*this);
 		tmp.waste.clear();
-		tmp.stock = std::vector<Card>(waste.rbegin(), waste.rend());
+		//this prevents an extra move to flip cards over again
+		tmp.stock = std::vector<Card>(waste.rbegin(), waste.rend() - MOVED_TO_WASTE);
 		moves.push_back(tmp);
 	}
 
