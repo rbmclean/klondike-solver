@@ -156,6 +156,30 @@ bool GameState::solvingIsTrivial() const {
 	return true;
 }
 
+//note: currently no generated move will change this from false to true
+//this means it only needs to be called for the first GameState generated from
+//the DeckGenerator
+bool GameState::isDeadEnd() const {
+	//below test is from http://web.engr.oregonstate.edu/%7Eafern/papers/solitaire.pdf (page 7)
+	//TODO: possibly implement the second case mentioned
+	for(size_t i = 0; i < TABLEAU_STACKS; i++){
+		//card must be blocking both cards it could be played on and one of same suit and lesser rank
+		//that's where the magic number 3 comes from (3 cards must be covered by each card checked)
+		for(size_t j = visibleIndex[i]; j >= 3; j--){
+			bool blockingLowerRank = false;
+			unsigned char blockedPlayableCards = 0;
+			for(size_t k = 0; k < j; k++)
+				if(tableau[i][j].canPlayOnTableau(tableau[i][k]))
+					blockedPlayableCards++;
+				else if(tableau[i][j].getSuit() == tableau[i][k].getSuit() && tableau[i][j].getRank() > tableau[i][k].getRank())
+					blockingLowerRank = true;
+			if(blockingLowerRank && blockedPlayableCards >= 2)
+				return true;
+		}
+	}
+	return false;
+}
+
 std::string GameState::getString() const {
 	std::string ret = "Stock:\tWaste:\n";
 	for(ssize_t i = static_cast<ssize_t>(std::max(stock.size(), waste.size())); i >= 0; i--){

@@ -20,5 +20,6 @@ public:
 	GameState(Card const deck[(Card::Suit::SuitMax + 1) * (Card::Rank::RankMax + 1)]);
 	std::vector<GameState> generateMoves() const;
 	bool solvingIsTrivial() const;
+	bool isDeadEnd() const;
 	std::string getString() const;
 };
