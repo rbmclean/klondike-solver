@@ -18,8 +18,11 @@ private:
 public:
 	GameState();
 	GameState(Card const deck[(Card::Suit::SuitMax + 1) * (Card::Rank::RankMax + 1)]);
+	size_t getHash() const;
 	std::vector<GameState> generateMoves() const;
-	bool solvingIsTrivial() const;
+	bool isTriviallySolvable() const;
 	bool isDeadEnd() const;
+	bool isSolvable() const;
+	bool operator==(const GameState& other) const;
 	std::string getString() const;
 };

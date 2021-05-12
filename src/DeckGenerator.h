@@ -1,5 +1,6 @@
 #pragma once
 
+#include <random>
 #include "Card.h"
 #include "GameState.h"
 
@@ -7,9 +8,11 @@ class DeckGenerator {
 
 private:
 	Card prevDeck[(Card::Suit::SuitMax + 1) * (Card::Rank::RankMax + 1)];
+	std::mt19937 randomGenerator;
 	bool done;
+	bool genRandom;
 public:
-	DeckGenerator();
+	DeckGenerator(bool random = true);
 	//note: no checks are done to see if this permuatation would have been generated naturally
 	DeckGenerator(std::string str);
 

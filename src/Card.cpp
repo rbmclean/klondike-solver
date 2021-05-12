@@ -88,6 +88,10 @@ bool Card::operator<(const Card &c) const {
 		c.suit * (Rank::RankMax + 1) + c.rank;
 }
 
+bool Card::operator==(const Card &c) const {
+	return suit == c.suit && rank == c.rank;
+}
+
 bool Card::canStartTableau() const {
 	return rank == Rank::KING;
 }

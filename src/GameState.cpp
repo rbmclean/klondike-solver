@@ -1,5 +1,31 @@
 #include "GameState.h"
-#include <ostream>
+#include <unordered_set>
+#include <iostream>
+
+namespace std {
+    template<> struct hash<GameState>{
+		//TODO: revisit this. It's simple and time efficient right now,
+		//but probably could be lengthed and still take a reasonable amount of time
+		//and reduce the number of collisions
+        std::size_t operator()(GameState const& state) const noexcept {
+            return state.getHash();
+        }
+    };
+}
+
+size_t GameState::getHash() const {
+    size_t ret = 0;
+    size_t mult;
+    for(mult = 0; mult < TABLEAU_STACKS; mult++)
+        ret += (mult + 1) * tableau[mult].size();
+    ret += (mult + 1) * stock.size();
+    mult++;
+    ret += (mult + 1) * waste.size();
+    mult++;
+    for(size_t i = 0; i <= Card::Suit::SuitMax; i++, mult++)
+        ret += (mult + 1) * foundations[i].size();
+    return ret;
+}
 
 //this may be useful for creating new states after dealing
 //not sure yet
@@ -144,7 +170,7 @@ std::vector<GameState> GameState::generateMoves() const {
 	return moves;
 }
 
-bool GameState::solvingIsTrivial() const {
+bool GameState::isTriviallySolvable() const {
 	//TODO: determine if these restrictions can be loosened
 	//for now, if there's <2 cards between the stock and waste
 	//and all tableau cards are visible, it can be solved
@@ -178,6 +204,45 @@ bool GameState::isDeadEnd() const {
 		}
 	}
 	return false;
+}
+
+bool GameState::isSolvable() const {
+	//move inside of loop if isDeadEnd() can change
+	//(it currently can't)
+	if(isDeadEnd())
+		return false;
+	std::vector<GameState> uncheckedStates;
+	std::unordered_set<GameState> seenStates;
+	seenStates.insert(*this);
+	uncheckedStates.push_back(*this);
+	while(uncheckedStates.size()){
+		std::vector<GameState> possibilities = uncheckedStates.back().generateMoves();
+		uncheckedStates.pop_back();
+		for(const auto &i : possibilities){
+			if(i.isTriviallySolvable())
+				return true;
+			if(seenStates.insert(i).second)
+				uncheckedStates.push_back(i);
+		}
+	}
+	return false;
+}
+
+bool GameState::operator==(const GameState& other) const {
+	for(size_t i = 0; i < TABLEAU_STACKS; i++){
+		if(tableau[i] != other.tableau[i])
+			return false;
+		if(visibleIndex[i] != other.visibleIndex[i])
+			return false;
+	}
+	if(stock != other.stock)
+		return false;
+	if(waste != other.waste)
+		return false;
+	for(size_t i = 0; i <= Card::Suit::SuitMax; i++)
+		if(foundations[i] != other.foundations[i])
+			return false;
+	return true;
 }
 
 std::string GameState::getString() const {

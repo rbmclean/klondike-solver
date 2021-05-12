@@ -6,14 +6,19 @@
 //note: it's important the deck is initialized in order of decreasing priority
 //otherwise permutations can easily be skipped
 //if this constructor is changed for some reason, sort() can just be called at the end
-DeckGenerator::DeckGenerator() : done(false) {
+DeckGenerator::DeckGenerator(bool random) : done(false), genRandom(random) {
 	size_t i = 0;
 	for(int suit = 0; suit <= Card::Suit::SuitMax; suit++)
 		for(int rank = 0; rank <= Card::Rank::RankMax; rank++)
 			prevDeck[i++] = Card(static_cast<Card::Rank>(rank), static_cast<Card::Suit>(suit));
+	if(genRandom){
+		std::random_device dev;
+		randomGenerator = std::mt19937(dev());
+		std::shuffle(prevDeck, prevDeck + (Card::Suit::SuitMax + 1) * (Card::Rank::RankMax + 1), randomGenerator);
+	}
 }
 
-DeckGenerator::DeckGenerator(std::string str) : done(false) {
+DeckGenerator::DeckGenerator(std::string str) : done(false), genRandom(false) {
 	if(str.length() != 2 * sizeof(prevDeck) / sizeof(prevDeck[0]))
 		throw std::invalid_argument("DeckGenerator constructor");
 	for(size_t i = 0; i < str.length() - 1; i += 2)
@@ -23,7 +28,10 @@ DeckGenerator::DeckGenerator(std::string str) : done(false) {
 //create the state before permuting, so that the initial state is tested at least once
 GameState DeckGenerator::getStart(){
 	GameState ret(prevDeck);
-	permuteNext();
+	if(genRandom)
+		std::shuffle(prevDeck, prevDeck + (Card::Suit::SuitMax + 1) * (Card::Rank::RankMax + 1), randomGenerator);
+	else
+		permuteNext();
 	return ret;
 }
 

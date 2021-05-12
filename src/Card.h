@@ -4,7 +4,7 @@ class Card {
 
 public:
 
-	enum Rank {
+	enum Rank : unsigned char {
 		ACE,
 		TWO,
 		THREE,
@@ -23,7 +23,7 @@ public:
 
 	// This order is used to allow color comparison by modulus
 	// (see isSameColor for example)
-	enum Suit {
+	enum Suit : unsigned char {
 		CLUBS,
 		HEARTS,
 		SPADES,
@@ -43,6 +43,7 @@ public:
 	Card();
 	bool isSameColor(const Card &c) const;
 	bool operator<(const Card &c) const;
+	bool operator==(const Card &c) const;
 	bool canStartTableau() const;
 	bool canStartFoundation() const;
 	bool canPlayOnTableau(const Card &c) const;
