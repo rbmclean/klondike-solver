@@ -1,4 +1,5 @@
 #include "DeckGenerator.h"
+#include "logger.h"
 #include <cstddef>
 #include <algorithm>
 #include <stdexcept>
@@ -7,6 +8,8 @@
 //otherwise permutations can easily be skipped
 //if this constructor is changed for some reason, sort() can just be called at the end
 DeckGenerator::DeckGenerator(bool random) : done(false), genRandom(random) {
+	log(2, "Initializing DeckGenerator with default deck and random generation");
+	log(2, genRandom ? " enabled\n" : " disabled\n");
 	size_t i = 0;
 	for(int suit = 0; suit <= Card::Suit::SuitMax; suit++)
 		for(int rank = 0; rank <= Card::Rank::RankMax; rank++)
@@ -19,6 +22,10 @@ DeckGenerator::DeckGenerator(bool random) : done(false), genRandom(random) {
 }
 
 DeckGenerator::DeckGenerator(std::string str) : done(false), genRandom(false) {
+	log(2, "Initializing DeckGenerator with deck ");
+	log(2, str);
+	log(2, " and random generation");
+	log(2, genRandom ? " enabled\n" : " disabled\n");
 	if(str.length() != 2 * sizeof(prevDeck) / sizeof(prevDeck[0]))
 		throw std::invalid_argument("DeckGenerator constructor");
 	for(size_t i = 0; i < str.length() - 1; i += 2)
@@ -27,6 +34,9 @@ DeckGenerator::DeckGenerator(std::string str) : done(false), genRandom(false) {
 
 //create the state before permuting, so that the initial state is tested at least once
 GameState DeckGenerator::getStart(){
+	log(1, "Creating state for deck ");
+	log(1, getString());
+	log(1, "\n");
 	GameState ret(prevDeck);
 	if(genRandom)
 		std::shuffle(prevDeck, prevDeck + (Card::Suit::SuitMax + 1) * (Card::Rank::RankMax + 1), randomGenerator);
@@ -82,6 +92,7 @@ void DeckGenerator::permuteNext(){
 		}
 		maxCardIndex = index;
 	}
+	log(1, "Deck generator is out of permutations\n");
 	done = true;
 }
 

@@ -1,4 +1,5 @@
 #include "GameState.h"
+#include "logger.h"
 #include <unordered_set>
 #include <iostream>
 
@@ -24,6 +25,9 @@ size_t GameState::getHash() const {
     mult++;
     for(size_t i = 0; i <= Card::Suit::SuitMax; i++, mult++)
         ret += (mult + 1) * foundations[i].size();
+    log(3, "GameState hashed to ");
+    log(3, std::to_string(ret));
+    log(3, "\n");
     return ret;
 }
 
@@ -167,6 +171,11 @@ std::vector<GameState> GameState::generateMoves() const {
 				moves.push_back(tmp);
 			}
 	}
+    log(1, "Generated ");
+    log(1, std::to_string(moves.size()));
+    log(1, " moves from state\n");
+    if(wouldLog(3))
+        log(3, getString());
 	return moves;
 }
 
@@ -199,8 +208,10 @@ bool GameState::isDeadEnd() const {
 					blockedPlayableCards++;
 				else if(tableau[i][j].getSuit() == tableau[i][k].getSuit() && tableau[i][j].getRank() > tableau[i][k].getRank())
 					blockingLowerRank = true;
-			if(blockingLowerRank && blockedPlayableCards >= 2)
+			if(blockingLowerRank && blockedPlayableCards >= 2){
+                log(1, "State is a dead end\n");
 				return true;
+            }
 		}
 	}
 	return false;
@@ -219,12 +230,19 @@ bool GameState::isSolvable() const {
 		std::vector<GameState> possibilities = uncheckedStates.back().generateMoves();
 		uncheckedStates.pop_back();
 		for(const auto &i : possibilities){
-			if(i.isTriviallySolvable())
+			if(i.isTriviallySolvable()){
+                log(1, "Solvability check ended with ");
+                log(1, std::to_string(seenStates.size()));
+                log(1, " states seen.\n");
 				return true;
+            }
 			if(seenStates.insert(i).second)
 				uncheckedStates.push_back(i);
 		}
 	}
+    log(1, "Solvability check ended with ");
+    log(1, std::to_string(seenStates.size()));
+    log(1, " states seen.\n");
 	return false;
 }
 
