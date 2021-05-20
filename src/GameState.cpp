@@ -58,7 +58,7 @@ std::vector<GameState> GameState::generateMoves() const {
 	//1. flip waste back to stock
 	if(!stock.size() && waste.size() > MOVED_TO_WASTE){
 		GameState tmp(*this);
-		tmp.waste.clear();
+		tmp.waste.erase(tmp.waste.begin() + MOVED_TO_WASTE, tmp.waste.end());
 		//this prevents an extra move to flip cards over again
 		tmp.stock = std::vector<Card>(waste.rbegin(), waste.rend() - MOVED_TO_WASTE);
 		moves.push_back(tmp);
