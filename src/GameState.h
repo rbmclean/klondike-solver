@@ -15,6 +15,9 @@ private:
 	std::vector<Card> stock;
 	std::vector<Card> waste;
 	std::vector<Card> foundations[Card::Suit::SuitMax + 1];
+	//<cardMoved>(<cardMovedOn>|"T"|"F")*
+	//"T" for tableau, "F" for foundation
+	std::string moveSequence;
 public:
 	GameState();
 	GameState(Card const deck[(Card::Suit::SuitMax + 1) * (Card::Rank::RankMax + 1)]);
@@ -22,7 +25,7 @@ public:
 	std::vector<GameState> generateMoves() const;
 	bool isTriviallySolvable() const;
 	bool isDeadEnd() const;
-	bool isSolvable() const;
+	std::string getHowToSolve() const;
 	bool operator==(const GameState& other) const;
 	std::string getString() const;
 };

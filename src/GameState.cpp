@@ -83,6 +83,8 @@ std::vector<GameState> GameState::generateMoves() const {
 			GameState tmp(*this);
 			tmp.waste.pop_back();
 			tmp.foundations[foundationIndex].push_back(waste.back());
+            tmp.moveSequence += waste.back().getString();
+            tmp.moveSequence += foundations[foundationIndex].size() ? foundations[foundationIndex].back().getString() : "F";
 			moves.push_back(tmp);
 		}
 
@@ -92,11 +94,15 @@ std::vector<GameState> GameState::generateMoves() const {
 				GameState tmp(*this);
 				tmp.waste.pop_back();
 				tmp.tableau[i].push_back(waste.back());
+                tmp.moveSequence += waste.back().getString();
+                tmp.moveSequence += tableau[i].back().getString();
 				moves.push_back(tmp);
 			}else if(!tableau[i].size() && waste.back().canStartTableau()){
 				GameState tmp(*this);
 				tmp.waste.pop_back();
 				tmp.tableau[i].push_back(waste.back());
+                tmp.moveSequence += waste.back().getString();
+                tmp.moveSequence += 'T';
 				moves.push_back(tmp);
 			}
 		}
@@ -119,6 +125,8 @@ std::vector<GameState> GameState::generateMoves() const {
 							tmp.tableau[k].push_back(tableau[i][l]);
 						if(j == visibleIndex[i] && j)
 							tmp.visibleIndex[i]--;
+                        tmp.moveSequence += tableau[i][j].getString();
+                        tmp.moveSequence += tableau[k].back().getString();
 						moves.push_back(tmp);
 					}else if(!tableau[k].size() && tableau[i][j].canStartTableau()){
 						GameState tmp(*this);
@@ -127,6 +135,8 @@ std::vector<GameState> GameState::generateMoves() const {
 							tmp.tableau[k].push_back(tableau[i][l]);
 						if(j == visibleIndex[i] && j)
 							tmp.visibleIndex[i]--;
+                        tmp.moveSequence += tableau[i][j].getString();
+                        tmp.moveSequence += 'T';
 						moves.push_back(tmp);
 					}
 				}
@@ -142,6 +152,8 @@ std::vector<GameState> GameState::generateMoves() const {
 				tmp.foundations[foundationIndex].push_back(tableau[i].back());
 				if(tableau[i].size() > 1 && visibleIndex[i] + 1 == tableau[i].size())
 					tmp.visibleIndex[i]--;
+                tmp.moveSequence += tableau[i].back().getString();
+                tmp.moveSequence += foundations[foundationIndex].size() ? foundations[foundationIndex].back().getString() : "F";
 				moves.push_back(tmp);
 			}
 		}
@@ -160,6 +172,8 @@ std::vector<GameState> GameState::generateMoves() const {
 				GameState tmp(*this);
 				tmp.foundations[i].pop_back();
 				tmp.tableau[j].push_back(foundations[i].back());
+                tmp.moveSequence += foundations[i].back().getString();
+                tmp.moveSequence += tableau[j].back().getString();
 				moves.push_back(tmp);
 			}else if(!tableau[j].size() && foundations[i].back().canStartTableau()){
 				//TODO: is there actually a case where moving a king off the foundation makes sense?
@@ -168,12 +182,14 @@ std::vector<GameState> GameState::generateMoves() const {
 				GameState tmp(*this);
 				tmp.foundations[i].pop_back();
 				tmp.tableau[j].push_back(foundations[i].back());
+                tmp.moveSequence += foundations[i].back().getString();
+                tmp.moveSequence += 'T';
 				moves.push_back(tmp);
 			}
 	}
-    log(1, "Generated ");
-    log(1, std::to_string(moves.size()));
-    log(1, " moves from state\n");
+    log(2, "Generated ");
+    log(2, std::to_string(moves.size()));
+    log(2, " moves from state\n");
     if(wouldLog(3))
         log(3, getString());
 	return moves;
@@ -217,11 +233,11 @@ bool GameState::isDeadEnd() const {
 	return false;
 }
 
-bool GameState::isSolvable() const {
+std::string GameState::getHowToSolve() const {
 	//move inside of loop if isDeadEnd() can change
 	//(it currently can't)
 	if(isDeadEnd())
-		return false;
+		return "";
 	std::vector<GameState> uncheckedStates;
 	std::unordered_set<GameState> seenStates;
 	seenStates.insert(*this);
@@ -234,7 +250,7 @@ bool GameState::isSolvable() const {
                 log(1, "Solvability check ended with ");
                 log(1, std::to_string(seenStates.size()));
                 log(1, " states seen.\n");
-				return true;
+				return i.moveSequence;
             }
 			if(seenStates.insert(i).second)
 				uncheckedStates.push_back(i);
@@ -243,7 +259,7 @@ bool GameState::isSolvable() const {
     log(1, "Solvability check ended with ");
     log(1, std::to_string(seenStates.size()));
     log(1, " states seen.\n");
-	return false;
+	return "";
 }
 
 bool GameState::operator==(const GameState& other) const {

@@ -102,12 +102,18 @@ int main(int argc, char* argv[]){
 		std::cerr << "-1 and -c are exclusive" << std::endl;
 		return 1;
 	}
+	std::string solveString;
 	if(singleDeck){
 		DeckGenerator d(singleDeck);
-		if(d.getStart().isSolvable())
-			std::cout << "Solvable" << std::endl;
+		solveString = d.getStart().getHowToSolve();
+		if(solveString.size()){
+			log(0, "Solvable");
+			log(1, ": ");
+			log(1, solveString);
+			log(0, "\n");
+		}
 		else
-			std::cout << "Unsolvable" << std::endl;
+			log(0, "Unsolvable\n");
 	}
 	else if(continueDeck){
 		if(random)
@@ -115,10 +121,15 @@ int main(int argc, char* argv[]){
 		DeckGenerator d(continueDeck);
 		uint64_t checked = 0;
 		do{
-			if(d.getStart().isSolvable())
-				std::cout << "Solvable" << std::endl;
+			solveString = d.getStart().getHowToSolve();
+			if(solveString.size()){
+				log(0, "Solvable");
+				log(1, ": ");
+				log(1, solveString);
+				log(0, "\n");
+			}
 			else
-				std::cout << "Unsolvable" << std::endl;
+				log(0, "Unsolvable\n");
 			checked++;
 		}while(!d.donePermuting() && (checked < decks || !decks));
 	}
@@ -126,10 +137,15 @@ int main(int argc, char* argv[]){
 		DeckGenerator d(random);
 		uint64_t checked = 0;
 		do{
-			if(d.getStart().isSolvable())
-				std::cout << "Solvable" << std::endl;
+			solveString = d.getStart().getHowToSolve();
+			if(solveString.size()){
+				log(0, "Solvable");
+				log(1, ": ");
+				log(1, solveString);
+				log(0, "\n");
+			}
 			else
-				std::cout << "Unsolvable" << std::endl;
+				log(0, "Unsolvable\n");
 			checked++;
 		}while(!d.donePermuting() && (checked < decks || !decks));
 	}
