@@ -4,6 +4,7 @@
 
 #define TABLEAU_STACKS 7
 #define MOVED_TO_WASTE 3
+#define LOG_EVERY_X_STATES 10000
 
 class GameState {
 private:
@@ -13,7 +14,7 @@ private:
 	//minimum index of visible card
 	size_t visibleIndex[TABLEAU_STACKS];
 	std::vector<Card> stock;
-	std::vector<Card> waste;
+	size_t cardsOnWaste;
 	std::vector<Card> foundations[Card::Suit::SuitMax + 1];
 	//<cardMoved>(<cardMovedOn>|"T"|"F")*
 	//"T" for tableau, "F" for foundation

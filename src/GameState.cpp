@@ -18,11 +18,9 @@ size_t GameState::getHash() const {
     size_t ret = 0;
     size_t mult;
     for(mult = 0; mult < TABLEAU_STACKS; mult++)
-        ret += (mult + 1) * tableau[mult].size();
-    ret += (mult + 1) * stock.size();
-    mult++;
-    ret += (mult + 1) * waste.size();
-    mult++;
+        ret += (mult + 1) * tableau[mult].size() * (visibleIndex[mult] + 1);
+    ret += (mult++ + 1) * stock.size();
+    ret += cardsOnWaste * mult++;
     for(size_t i = 0; i <= Card::Suit::SuitMax; i++, mult++)
         ret += (mult + 1) * foundations[i].size();
     log(3, "GameState hashed to ");
@@ -35,7 +33,7 @@ size_t GameState::getHash() const {
 //not sure yet
 GameState::GameState(){}
 
-GameState::GameState(Card const deck[(Card::Suit::SuitMax + 1) * (Card::Rank::RankMax + 1)]){
+GameState::GameState(Card const deck[(Card::Suit::SuitMax + 1) * (Card::Rank::RankMax + 1)]) : cardsOnWaste(0) {
 	size_t deckIndex = 0;
 	for(size_t i = 0; i < TABLEAU_STACKS; i++){
 		//ith stack gets i+1 cards
@@ -44,10 +42,6 @@ GameState::GameState(Card const deck[(Card::Suit::SuitMax + 1) * (Card::Rank::Ra
 		visibleIndex[i] = i;
 	}
 	stock = std::vector<Card>(deck + deckIndex, deck + (Card::Suit::SuitMax + 1) * (Card::Rank::RankMax + 1));
-	for(size_t i = 0; i < MOVED_TO_WASTE && stock.size(); i++){
-		waste.push_back(stock.back());
-		stock.pop_back();
-	}
 }
 
 //TODO: filter out more worthless moves
@@ -55,63 +49,62 @@ GameState::GameState(Card const deck[(Card::Suit::SuitMax + 1) * (Card::Rank::Ra
 std::vector<GameState> GameState::generateMoves() const {
 	std::vector<GameState> moves;
 
-	//1. flip waste back to stock
-	if(!stock.size() && waste.size() > MOVED_TO_WASTE){
-		GameState tmp(*this);
-		tmp.waste.erase(tmp.waste.begin() + MOVED_TO_WASTE, tmp.waste.end());
-		//this prevents an extra move to flip cards over again
-		tmp.stock = std::vector<Card>(waste.rbegin(), waste.rend() - MOVED_TO_WASTE);
-		moves.push_back(tmp);
-	}
+	//1. play a stock card
+    std::unordered_set<size_t> stockIndices;
 
-	//2. flip the next card(s) onto the waste
-	if(stock.size()){
-		GameState tmp(*this);
-		for(size_t i = 0; i < MOVED_TO_WASTE && tmp.stock.size(); i++){
-			tmp.waste.push_back(tmp.stock.back());
-			tmp.stock.pop_back();
-		}
-		moves.push_back(tmp);
-	}
-
-	//3. play topmost waste card
-	if(waste.size()){
-		//3a. play it on a foundation
-		size_t foundationIndex = static_cast<size_t>(waste.back().getSuit());
-		if((!foundations[foundationIndex].size() && waste.back().canStartFoundation()) ||
-				(foundations[foundationIndex].size() && waste.back().canPlayOnFoundation(foundations[foundationIndex].back()))){
+    for(ssize_t i = static_cast<ssize_t>(stock.size()) - MOVED_TO_WASTE; i >= 0; i -= MOVED_TO_WASTE)
+        stockIndices.insert(static_cast<size_t>(i)), log(2, stock[i].getString());
+    for(ssize_t i = static_cast<ssize_t>(stock.size() - cardsOnWaste) - MOVED_TO_WASTE; i >= 0; i -= MOVED_TO_WASTE)
+        stockIndices.insert(static_cast<size_t>(i)), log(2, stock[i].getString());
+    if(stock.size())
+        stockIndices.insert(0), log(2, stock[0].getString());
+    log(2, "\n");
+	for(size_t i : stockIndices){
+		//1a. play it on a foundation
+		size_t foundationIndex = static_cast<size_t>(stock[i].getSuit());
+		if((!foundations[foundationIndex].size() && stock[i].canStartFoundation()) ||
+				(foundations[foundationIndex].size() && stock[i].canPlayOnFoundation(foundations[foundationIndex].back()))){
 			GameState tmp(*this);
-			tmp.waste.pop_back();
-			tmp.foundations[foundationIndex].push_back(waste.back());
-            tmp.moveSequence += waste.back().getString();
+			tmp.stock.erase(tmp.stock.begin() + i);
+            tmp.cardsOnWaste = stock.size() - i - 1;
+            if(!(tmp.cardsOnWaste % MOVED_TO_WASTE))
+                tmp.cardsOnWaste = 0;
+			tmp.foundations[foundationIndex].push_back(stock[i]);
+            tmp.moveSequence += stock[i].getString();
             tmp.moveSequence += foundations[foundationIndex].size() ? foundations[foundationIndex].back().getString() : "F";
 			moves.push_back(tmp);
 		}
 
-		//3b. play it on the tableau
-		for(size_t i = 0; i < TABLEAU_STACKS; i++){
-			if(tableau[i].size() && waste.back().canPlayOnTableau(tableau[i].back())){
+		//1b. play it on the tableau
+		for(size_t j = 0; j < TABLEAU_STACKS; j++){
+			if(tableau[j].size() && stock[i].canPlayOnTableau(tableau[j].back())){
 				GameState tmp(*this);
-				tmp.waste.pop_back();
-				tmp.tableau[i].push_back(waste.back());
-                tmp.moveSequence += waste.back().getString();
-                tmp.moveSequence += tableau[i].back().getString();
+				tmp.stock.erase(tmp.stock.begin() + i);
+                tmp.cardsOnWaste = stock.size() - i - 1;
+                if(!(tmp.cardsOnWaste % MOVED_TO_WASTE))
+                    tmp.cardsOnWaste = 0;
+				tmp.tableau[j].push_back(stock[i]);
+                tmp.moveSequence += stock[i].getString();
+                tmp.moveSequence += tableau[j].back().getString();
 				moves.push_back(tmp);
-			}else if(!tableau[i].size() && waste.back().canStartTableau()){
+			}else if(!tableau[j].size() && stock[i].canStartTableau()){
 				GameState tmp(*this);
-				tmp.waste.pop_back();
-				tmp.tableau[i].push_back(waste.back());
-                tmp.moveSequence += waste.back().getString();
+				tmp.stock.erase(tmp.stock.begin() + i);
+                tmp.cardsOnWaste = stock.size() - i - 1;
+                if(!(tmp.cardsOnWaste % MOVED_TO_WASTE))
+                    tmp.cardsOnWaste = 0;
+				tmp.tableau[j].push_back(stock[i]);
+                tmp.moveSequence += stock[i].getString();
                 tmp.moveSequence += 'T';
 				moves.push_back(tmp);
 			}
 		}
 	}
 
-	//4. move tableau card(s)
+	//2. move tableau card(s)
 	for(size_t i = 0; i < TABLEAU_STACKS; i++){
 		for(size_t j = visibleIndex[i]; j < tableau[i].size(); j++){
-			//4a. move card(s) to other tableau stack
+			//2a. move card(s) to other tableau stack
 			//only pointless case I can think of is moving a King
 			//from an empty space to another empty space
 			if(!(!visibleIndex[i] && !j && tableau[i][j].canStartTableau())){
@@ -142,7 +135,7 @@ std::vector<GameState> GameState::generateMoves() const {
 				}
 			}
 		}
-		//4b. move topmost card to foundation
+		//2b. move topmost card to foundation
 		if(tableau[i].size()){
 			size_t foundationIndex = static_cast<size_t>(tableau[i].back().getSuit());
 			if((!foundations[foundationIndex].size() && tableau[i].back().canStartFoundation()) ||
@@ -159,7 +152,7 @@ std::vector<GameState> GameState::generateMoves() const {
 		}
 	}
 
-	//5. move card from foundation to tableau
+	//3. move card from foundation to tableau
 	//anything within two of the lowest stack won't need to move ever
 	size_t minFoundation = foundations[0].size();
 	for(size_t i = 1; i <= Card::Suit::SuitMax; i++)
@@ -190,8 +183,6 @@ std::vector<GameState> GameState::generateMoves() const {
     log(2, "Generated ");
     log(2, std::to_string(moves.size()));
     log(2, " moves from state\n");
-    if(wouldLog(3))
-        log(3, getString());
 	return moves;
 }
 
@@ -199,7 +190,7 @@ bool GameState::isTriviallySolvable() const {
 	//TODO: determine if these restrictions can be loosened
 	//for now, if there's <2 cards between the stock and waste
 	//and all tableau cards are visible, it can be solved
-	if(stock.size() + waste.size() >= 2)
+	if(stock.size() >= 2 || (stock.size() == 2 && cardsOnWaste != 1))
 		return false;
 	for(size_t i = 0; i < TABLEAU_STACKS; i++)
 		if(tableau[i].size() && visibleIndex[i])
@@ -242,10 +233,23 @@ std::string GameState::getHowToSolve() const {
 	std::unordered_set<GameState> seenStates;
 	seenStates.insert(*this);
 	uncheckedStates.push_back(*this);
+    size_t logAt = LOG_EVERY_X_STATES;
 	while(uncheckedStates.size()){
+        if(seenStates.size() >= logAt){
+            log(1, std::to_string(seenStates.size()) + " states seen so far.\n");
+            log(1, std::to_string(uncheckedStates.size()) + " unchecked states currently.\n");
+            logAt += LOG_EVERY_X_STATES;
+        }
 		std::vector<GameState> possibilities = uncheckedStates.back().generateMoves();
+        if(wouldLog(3)){
+            log(3, "Checking state\n");
+            log(3, uncheckedStates.back().getString());
+            log(3, "Produced states:\n");
+        }
 		uncheckedStates.pop_back();
 		for(const auto &i : possibilities){
+            if(wouldLog(3))
+                log(3, i.getString());
 			if(i.isTriviallySolvable()){
                 log(1, "Solvability check ended with ");
                 log(1, std::to_string(seenStates.size()));
@@ -271,8 +275,8 @@ bool GameState::operator==(const GameState& other) const {
 	}
 	if(stock != other.stock)
 		return false;
-	if(waste != other.waste)
-		return false;
+	if(cardsOnWaste != other.cardsOnWaste)
+        return false;
 	for(size_t i = 0; i <= Card::Suit::SuitMax; i++)
 		if(foundations[i] != other.foundations[i])
 			return false;
@@ -280,18 +284,12 @@ bool GameState::operator==(const GameState& other) const {
 }
 
 std::string GameState::getString() const {
-	std::string ret = "Stock:\tWaste:\n";
-	for(ssize_t i = static_cast<ssize_t>(std::max(stock.size(), waste.size())); i >= 0; i--){
+	std::string ret = "Stock (";
+    ret += std::to_string(cardsOnWaste);
+    ret += " on waste):\n";
+	for(ssize_t i = static_cast<ssize_t>(stock.size()) - 1; i >= 0; i--){
 		//print backwards so that the top is printed at the top
-		if(static_cast<size_t>(i) >= stock.size())
-			ret += "  ";
-		else
-			ret += stock[i].getString();
-		ret += '\t';
-		if(static_cast<size_t>(i) >= waste.size())
-			ret += "  ";
-		else
-			ret += waste[i].getString();
+		ret += stock[i].getString();
 		ret += '\n';
 	}
 
