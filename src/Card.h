@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#define SUIT_MASK 0b11
 class Card {
 
 public:
@@ -32,8 +33,8 @@ public:
 	};
 
 private:
-	enum Rank rank;
-	enum Suit suit;
+	//uses rightmost two bits for suit, everything else is rank.
+	unsigned char rankSuit;
 
 public:
 	Rank getRank() const;

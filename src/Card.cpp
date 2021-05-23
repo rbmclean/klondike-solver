@@ -3,18 +3,24 @@
 #include <stdexcept>
 
 Card::Rank Card::getRank() const {
-	return rank;
+	return static_cast<Card::Rank>(rankSuit >> 2);
 }
 
 Card::Suit Card::getSuit() const {
-	return suit;
+	return static_cast<Card::Suit>(rankSuit & SUIT_MASK);
 }
 
-Card::Card(Rank r, Suit s) : rank(r), suit(s) {}
+Card::Card(Rank r, Suit s){
+	rankSuit = static_cast<unsigned char>(r);
+	rankSuit <<= 2;
+	rankSuit |= static_cast<unsigned char>(s);
+}
 
 Card::Card(std::string str){
 	if(str.length() != 2)
 		throw std::invalid_argument("Card constructor");
+	Card::Suit suit;
+	Card::Rank rank;
 	switch(str[0]){
 		case 'H':
 			suit = Suit::HEARTS;
@@ -74,44 +80,47 @@ Card::Card(std::string str){
 		default:
 			throw std::invalid_argument("Card constructor");
 	}
+	rankSuit = static_cast<unsigned char>(rank);
+	rankSuit <<= 2;
+	rankSuit |= static_cast<unsigned char>(suit);
 }
 
 //this constructor shouldn't be used, as what would a default card be?
-Card::Card() : rank(Rank::RankMax), suit(Suit::SuitMax) {}
+Card::Card() : rankSuit(0) {}
 
 bool Card::isSameColor(const Card &c) const {
-	return suit % 2 == c.suit % 2;
+	return (rankSuit & 1) == (c.rankSuit & 1);
 }
 
 bool Card::operator<(const Card &c) const {
-	return suit * (Rank::RankMax + 1) + rank <
-		c.suit * (Rank::RankMax + 1) + c.rank;
+	return getSuit() * (Rank::RankMax + 1) + getRank() <
+		c.getSuit() * (Rank::RankMax + 1) + c.getRank();
 }
 
 bool Card::operator==(const Card &c) const {
-	return suit == c.suit && rank == c.rank;
+	return rankSuit == c.rankSuit;
 }
 
 bool Card::canStartTableau() const {
-	return rank == Rank::KING;
+	return getRank() == Rank::KING;
 }
 
 bool Card::canStartFoundation() const {
-	return rank == Rank::ACE;
+	return getRank() == Rank::ACE;
 }
 
 //c is the card this would be played on
 bool Card::canPlayOnTableau(const Card &c) const {
-	return !isSameColor(c) && rank == c.rank - 1;
+	return !isSameColor(c) && getRank() == c.getRank() - 1;
 }
 
 bool Card::canPlayOnFoundation(const Card &c) const {
-	return suit == c.suit && rank == c.rank + 1;
+	return getSuit() == c.getSuit() && getRank() == c.getRank() + 1;
 }
 
 std::string Card::getString() const {
 	std::string ret;
-	switch(suit){
+	switch(getSuit()){
 		case Suit::HEARTS:
 			ret += 'H';
 			break;
@@ -127,7 +136,7 @@ std::string Card::getString() const {
 		default:
 			ret += '?';
 	}
-	switch(rank){
+	switch(getRank()){
 		case Rank::ACE:
 			ret += 'A';
 			break;
