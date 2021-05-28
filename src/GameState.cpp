@@ -29,9 +29,48 @@ size_t GameState::getHash() const {
     return ret;
 }
 
-//this may be useful for creating new states after dealing
-//not sure yet
-GameState::GameState(){}
+void GameState::standardize(){
+    //play moves first so we don't have to sort more than once
+
+    //TODO: stock moves need to be looked at carefully
+
+    //tableau moves to foundation
+    unsigned char minFoundationRank = Card::Rank::RankMax;
+    for(unsigned char i = 0; i <= Card::Suit::SuitMax; i++)
+        if(foundations[i].size())
+            minFoundationRank = std::min(minFoundationRank, static_cast<unsigned char>(foundations[i].back().getRank()));
+        else{
+            minFoundationRank = Card::Rank::T;//just a flag
+            break;
+        }
+    Card::Rank playIfBelow = (minFoundationRank == Card::Rank::T) ?
+            Card::Rank::THREE : static_cast<Card::Rank>(minFoundationRank + 3);
+    for(size_t i = 0; i < TABLEAU_STACKS; i++)
+        if(tableau[i].size()){
+            if(tableau[i].back().getRank() >= playIfBelow)
+                continue;
+            size_t foundationIndex = static_cast<size_t>(tableau[i].back().getSuit());
+            if((!foundations[foundationIndex].size() && tableau[i].back().canStartFoundation()) ||
+                    (foundations[foundationIndex].size() && tableau[i].back().canPlayOnFoundation(foundations[foundationIndex].back()))){
+                moveSequence.push_back(tableau[i].back());
+                moveSequence.push_back(foundations[foundationIndex].size() ? foundations[foundationIndex].back() : Card::FOUNDATION);
+                if(tableau[i].size() > 1 && visibleIndex[i] + 1 == static_cast<unsigned char>(tableau[i].size()))
+                    visibleIndex[i]--;
+                foundations[foundationIndex].push_back(tableau[i].back());
+                tableau[i].pop_back();
+                standardize();
+                return;//tail recursion
+            }
+        }
+
+    //sort tableau
+    //note: tableau is quite likely to already be sorted, or at least close
+    //there's also only TABLEAU_STACKS elements to sort
+    //so, I implemented insertion sort
+    for(size_t i = 1; i < TABLEAU_STACKS; i++)
+        for(size_t j = i; j > 0 && tableau[j - 1] > tableau[j]; j--)
+            std::swap(tableau[j], tableau[j - 1]), std::swap(visibleIndex[j], visibleIndex[j - 1]);
+}
 
 GameState::GameState(Card const deck[(Card::Suit::SuitMax + 1) * (Card::Rank::RankMax + 1)]) : cardsOnWaste(0) {
 	size_t deckIndex = 0;
@@ -42,6 +81,7 @@ GameState::GameState(Card const deck[(Card::Suit::SuitMax + 1) * (Card::Rank::Ra
 		visibleIndex[i] = i;
 	}
 	stock = std::vector<Card>(deck + deckIndex, deck + (Card::Suit::SuitMax + 1) * (Card::Rank::RankMax + 1));
+    standardize();
 }
 
 //TODO: filter out more worthless moves
@@ -72,6 +112,7 @@ std::vector<GameState> GameState::generateMoves() const {
 			tmp.foundations[foundationIndex].push_back(stock[i]);
             tmp.moveSequence.push_back(stock[i]);
             tmp.moveSequence.push_back(foundations[foundationIndex].size() ? foundations[foundationIndex].back() : Card::FOUNDATION);
+            tmp.standardize();
 			moves.push_back(tmp);
 		}
 
@@ -86,6 +127,7 @@ std::vector<GameState> GameState::generateMoves() const {
 				tmp.tableau[j].push_back(stock[i]);
                 tmp.moveSequence.push_back(stock[i]);
                 tmp.moveSequence.push_back(tableau[j].back());
+                tmp.standardize();
 				moves.push_back(tmp);
 			}else if(!tableau[j].size() && stock[i].canStartTableau()){
 				GameState tmp(*this);
@@ -96,6 +138,7 @@ std::vector<GameState> GameState::generateMoves() const {
 				tmp.tableau[j].push_back(stock[i]);
                 tmp.moveSequence.push_back(stock[i]);
                 tmp.moveSequence.push_back(Card::TABLEAU);
+                tmp.standardize();
 				moves.push_back(tmp);
 			}
 		}
@@ -120,6 +163,7 @@ std::vector<GameState> GameState::generateMoves() const {
 							tmp.visibleIndex[i]--;
                         tmp.moveSequence.push_back(tableau[i][j]);
                         tmp.moveSequence.push_back(tableau[k].back());
+                        tmp.standardize();
 						moves.push_back(tmp);
 					}else if(!tableau[k].size() && tableau[i][j].canStartTableau()){
 						GameState tmp(*this);
@@ -130,6 +174,7 @@ std::vector<GameState> GameState::generateMoves() const {
 							tmp.visibleIndex[i]--;
                         tmp.moveSequence.push_back(tableau[i][j]);
                         tmp.moveSequence.push_back(Card::TABLEAU);
+                        tmp.standardize();
 						moves.push_back(tmp);
 					}
 				}
@@ -147,6 +192,7 @@ std::vector<GameState> GameState::generateMoves() const {
 					tmp.visibleIndex[i]--;
                 tmp.moveSequence.push_back(tableau[i].back());
                 tmp.moveSequence.push_back(foundations[foundationIndex].size() ? foundations[foundationIndex].back() : Card::FOUNDATION);
+                tmp.standardize();
 				moves.push_back(tmp);
 			}
 		}
@@ -167,6 +213,7 @@ std::vector<GameState> GameState::generateMoves() const {
 				tmp.tableau[j].push_back(foundations[i].back());
                 tmp.moveSequence.push_back(foundations[i].back());
                 tmp.moveSequence.push_back(tableau[j].back());
+                tmp.standardize();
 				moves.push_back(tmp);
 			}else if(!tableau[j].size() && foundations[i].back().canStartTableau()){
 				//TODO: is there actually a case where moving a king off the foundation makes sense?
@@ -177,6 +224,7 @@ std::vector<GameState> GameState::generateMoves() const {
 				tmp.tableau[j].push_back(foundations[i].back());
                 tmp.moveSequence.push_back(foundations[i].back());
                 tmp.moveSequence.push_back(Card::TABLEAU);
+                tmp.standardize();
 				moves.push_back(tmp);
 			}
 	}

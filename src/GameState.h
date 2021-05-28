@@ -22,8 +22,14 @@ private:
 	std::vector<Card> stock;
 	std::vector<Card> foundations[Card::Suit::SuitMax + 1];
 	std::vector<Card> moveSequence;
+
+	//used to make operator== return true more often,
+	//when a state is functionally identical, though maybe some tableau stacks
+	//are in a different spot
+	//also used to autoplay moves that are guarenteed to never produce
+	//an unsolvable state from a solvable one and vice versa
+	void standardize();
 public:
-	GameState();
 	GameState(Card const deck[(Card::Suit::SuitMax + 1) * (Card::Rank::RankMax + 1)]);
 	size_t getHash() const;
 	std::vector<GameState> generateMoves() const;
