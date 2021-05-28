@@ -19,7 +19,9 @@ public:
 		JACK,
 		QUEEN,
 		KING,
-		RankMax = KING
+		RankMax = KING,
+		F = 0b111110,
+		T = 0b111111
 	};
 
 	// This order is used to allow color comparison by modulus
@@ -50,4 +52,7 @@ public:
 	bool canPlayOnTableau(const Card &c) const;
 	bool canPlayOnFoundation(const Card &c) const;
 	std::string getString() const;
+
+	static const Card FOUNDATION;
+	static const Card TABLEAU;
 };

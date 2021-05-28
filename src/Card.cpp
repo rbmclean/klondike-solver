@@ -2,6 +2,9 @@
 #include <cassert>
 #include <stdexcept>
 
+const Card Card::FOUNDATION(Card::Rank::F, Card::SuitMax);
+const Card Card::TABLEAU(Card::Rank::T, Card::SuitMax);
+
 Card::Rank Card::getRank() const {
 	return static_cast<Card::Rank>(rankSuit >> 2);
 }
@@ -175,6 +178,12 @@ std::string Card::getString() const {
 			break;
 		case Rank::KING:
 			ret += 'K';
+			break;
+		case Rank::F:
+			ret = 'F';
+			break;
+		case Rank::T:
+			ret = 'T';
 			break;
 		default:
 			ret += '?';

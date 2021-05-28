@@ -70,8 +70,8 @@ std::vector<GameState> GameState::generateMoves() const {
             if(!(tmp.cardsOnWaste % MOVED_TO_WASTE))
                 tmp.cardsOnWaste = 0;
 			tmp.foundations[foundationIndex].push_back(stock[i]);
-            tmp.moveSequence += stock[i].getString();
-            tmp.moveSequence += foundations[foundationIndex].size() ? foundations[foundationIndex].back().getString() : "F";
+            tmp.moveSequence.push_back(stock[i]);
+            tmp.moveSequence.push_back(foundations[foundationIndex].size() ? foundations[foundationIndex].back() : Card::FOUNDATION);
 			moves.push_back(tmp);
 		}
 
@@ -84,8 +84,8 @@ std::vector<GameState> GameState::generateMoves() const {
                 if(!(tmp.cardsOnWaste % MOVED_TO_WASTE))
                     tmp.cardsOnWaste = 0;
 				tmp.tableau[j].push_back(stock[i]);
-                tmp.moveSequence += stock[i].getString();
-                tmp.moveSequence += tableau[j].back().getString();
+                tmp.moveSequence.push_back(stock[i]);
+                tmp.moveSequence.push_back(tableau[j].back());
 				moves.push_back(tmp);
 			}else if(!tableau[j].size() && stock[i].canStartTableau()){
 				GameState tmp(*this);
@@ -94,8 +94,8 @@ std::vector<GameState> GameState::generateMoves() const {
                 if(!(tmp.cardsOnWaste % MOVED_TO_WASTE))
                     tmp.cardsOnWaste = 0;
 				tmp.tableau[j].push_back(stock[i]);
-                tmp.moveSequence += stock[i].getString();
-                tmp.moveSequence += 'T';
+                tmp.moveSequence.push_back(stock[i]);
+                tmp.moveSequence.push_back(Card::TABLEAU);
 				moves.push_back(tmp);
 			}
 		}
@@ -118,8 +118,8 @@ std::vector<GameState> GameState::generateMoves() const {
 							tmp.tableau[k].push_back(tableau[i][l]);
 						if(j == visibleIndex[i] && j)
 							tmp.visibleIndex[i]--;
-                        tmp.moveSequence += tableau[i][j].getString();
-                        tmp.moveSequence += tableau[k].back().getString();
+                        tmp.moveSequence.push_back(tableau[i][j]);
+                        tmp.moveSequence.push_back(tableau[k].back());
 						moves.push_back(tmp);
 					}else if(!tableau[k].size() && tableau[i][j].canStartTableau()){
 						GameState tmp(*this);
@@ -128,8 +128,8 @@ std::vector<GameState> GameState::generateMoves() const {
 							tmp.tableau[k].push_back(tableau[i][l]);
 						if(j == visibleIndex[i] && j)
 							tmp.visibleIndex[i]--;
-                        tmp.moveSequence += tableau[i][j].getString();
-                        tmp.moveSequence += 'T';
+                        tmp.moveSequence.push_back(tableau[i][j]);
+                        tmp.moveSequence.push_back(Card::TABLEAU);
 						moves.push_back(tmp);
 					}
 				}
@@ -143,10 +143,10 @@ std::vector<GameState> GameState::generateMoves() const {
 				GameState tmp(*this);
 				tmp.tableau[i].pop_back();
 				tmp.foundations[foundationIndex].push_back(tableau[i].back());
-				if(tableau[i].size() > 1 && visibleIndex[i] + 1 == tableau[i].size())
+				if(tableau[i].size() > 1 && visibleIndex[i] + 1 == static_cast<unsigned char>(tableau[i].size()))
 					tmp.visibleIndex[i]--;
-                tmp.moveSequence += tableau[i].back().getString();
-                tmp.moveSequence += foundations[foundationIndex].size() ? foundations[foundationIndex].back().getString() : "F";
+                tmp.moveSequence.push_back(tableau[i].back());
+                tmp.moveSequence.push_back(foundations[foundationIndex].size() ? foundations[foundationIndex].back() : Card::FOUNDATION);
 				moves.push_back(tmp);
 			}
 		}
@@ -165,8 +165,8 @@ std::vector<GameState> GameState::generateMoves() const {
 				GameState tmp(*this);
 				tmp.foundations[i].pop_back();
 				tmp.tableau[j].push_back(foundations[i].back());
-                tmp.moveSequence += foundations[i].back().getString();
-                tmp.moveSequence += tableau[j].back().getString();
+                tmp.moveSequence.push_back(foundations[i].back());
+                tmp.moveSequence.push_back(tableau[j].back());
 				moves.push_back(tmp);
 			}else if(!tableau[j].size() && foundations[i].back().canStartTableau()){
 				//TODO: is there actually a case where moving a king off the foundation makes sense?
@@ -175,8 +175,8 @@ std::vector<GameState> GameState::generateMoves() const {
 				GameState tmp(*this);
 				tmp.foundations[i].pop_back();
 				tmp.tableau[j].push_back(foundations[i].back());
-                tmp.moveSequence += foundations[i].back().getString();
-                tmp.moveSequence += 'T';
+                tmp.moveSequence.push_back(foundations[i].back());
+                tmp.moveSequence.push_back(Card::TABLEAU);
 				moves.push_back(tmp);
 			}
 	}
@@ -254,7 +254,10 @@ std::string GameState::getHowToSolve() const {
                 log(1, "Solvability check ended with ");
                 log(1, std::to_string(seenStates.size()));
                 log(1, " states seen.\n");
-				return i.moveSequence;
+                std::string ret;
+				for(const auto &i : i.moveSequence)
+                    ret += i.getString();
+                return ret;
             }
 			if(seenStates.insert(i).second)
 				uncheckedStates.push_back(i);
