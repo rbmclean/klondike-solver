@@ -67,7 +67,7 @@ void GameState::standardize(){
         }
 	
 	//handle stock/waste
-	if(!(cardsOnWaste % MOVED_TO_WASTE)){
+	if(!(cardsOnWaste % MOVED_TO_WASTE) || cardsOnWaste == stock.size()){
 		cardsOnWaste = 0;
 		//if playing the last card in the stock won't change what moves are available for other stock cards,
 		//and we can play it to the foundation without ever wanting to undo it,
@@ -76,15 +76,11 @@ void GameState::standardize(){
 		size_t foundationIndex = static_cast<size_t>(stock[0].getSuit());
 		if(stock.size() && stock[0].getRank() < playIfBelow && (!foundations[foundationIndex].size() && stock[0].canStartFoundation()) ||
 				(foundations[foundationIndex].size() && stock[0].canPlayOnFoundation(foundations[foundationIndex].back()))){
-			//log(1, "Special case:\n");
-			//log(1, getString());
 			moveSequence.push_back(stock[0]);
             moveSequence.push_back(foundations[foundationIndex].size() ? foundations[foundationIndex].back() : Card::FOUNDATION);
             foundations[foundationIndex].push_back(stock[0]);
             stock.erase(stock.begin());
             standardize();
-            //log(1, "End state:\n");
-            //log(1, getString());
             return;//tail recursion
 		}
 	}
@@ -181,7 +177,7 @@ std::vector<GameState> GameState::generateMoves() const {
 				for(size_t k = 0; k < TABLEAU_STACKS; k++){
 					if(k == i)
 						continue;
-					if(tableau[k].size() && tableau[i][j].canPlayOnTableau(tableau[k].back()) && !(tableausEmptied >= 4 && !j)){
+					if(tableau[k].size() && tableau[i][j].canPlayOnTableau(tableau[k].back()) && !(tableausEmptied >= Card::Suit::SuitMax + 1 && !j)){
 						GameState tmp(*this);
 						tmp.tableau[i].erase(tmp.tableau[i].begin() + j, tmp.tableau[i].end());
 						for(size_t l = j; l < tableau[i].size(); l++)
@@ -208,10 +204,12 @@ std::vector<GameState> GameState::generateMoves() const {
 			}
 		}
 		//2b. move topmost card to foundation
+		//pointless for a king if there's room for all kings on the tableau - no card would fill it's space except itself
 		if(tableau[i].size()){
 			size_t foundationIndex = static_cast<size_t>(tableau[i].back().getSuit());
 			if((!foundations[foundationIndex].size() && tableau[i].back().canStartFoundation()) ||
-					(foundations[foundationIndex].size() && tableau[i].back().canPlayOnFoundation(foundations[foundationIndex].back()))){
+					(foundations[foundationIndex].size() && tableau[i].back().canPlayOnFoundation(foundations[foundationIndex].back()) && 
+					(tableau[i].back().getRank() != Card::Rank::KING || tableausEmptied < Card::Suit::SuitMax + 1))){
 				GameState tmp(*this);
 				tmp.tableau[i].pop_back();
 				tmp.foundations[foundationIndex].push_back(tableau[i].back());
@@ -264,7 +262,7 @@ std::vector<GameState> GameState::generateMoves() const {
 bool GameState::isTriviallySolvable() const {
 	//TODO: determine if these restrictions can be loosened
 	//for now, you must be able to access every card (all visible) to be solvable
-	if(!MOVED_TO_WASTE == 1 && (stock.size() > 2 || (stock.size() == 2 && cardsOnWaste != 1)))
+	if(MOVED_TO_WASTE != 1 && (stock.size() > 2 || (stock.size() == 2 && cardsOnWaste != 1)))
 		return false;
 	for(size_t i = 0; i < TABLEAU_STACKS; i++)
 		if(tableau[i].size() && visibleIndex[i])
