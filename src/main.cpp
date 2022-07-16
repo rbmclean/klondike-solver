@@ -108,13 +108,13 @@ int main(int argc, char* argv[]){
 		DeckGenerator d(deck);
 		solveString = d.getStart().getHowToSolve();
 		if(solveString.size()){
-			log(0, "Solvable");
+			std::cout << "Solvable";
 			log(1, ": ");
 			log(1, solveString);
-			log(0, "\n");
+			std::cout << "\n";
 		}
 		else
-			log(0, "Unsolvable\n");
+			std::cout << "Unsolvable";
 	}
 	else if(continueDeck){
 		if(random)
@@ -125,13 +125,13 @@ int main(int argc, char* argv[]){
 		do{
 			solveString = d.getStart().getHowToSolve();
 			if(solveString.size()){
-				log(0, "Solvable");
+				std::cout << "Solvable";
 				log(1, ": ");
 				log(1, solveString);
-				log(0, "\n");
+				std::cout << "\n";
 			}
 			else
-				log(0, "Unsolvable\n");
+				std::cout << "Unsolvable";
 			checked++;
 		}while(!d.donePermuting() && (checked < decks || !decks));
 	}
@@ -141,13 +141,13 @@ int main(int argc, char* argv[]){
 		do{
 			solveString = d.getStart().getHowToSolve();
 			if(solveString.size()){
-				log(0, "Solvable");
+				std::cout << "Solvable";
 				log(1, ": ");
 				log(1, solveString);
-				log(0, "\n");
+				std::cout << "\n";
 			}
 			else
-				log(0, "Unsolvable\n");
+				std::cout << "Unsolvable";
 			checked++;
 		}while(!d.donePermuting() && (checked < decks || !decks));
 	}
