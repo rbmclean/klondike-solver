@@ -111,10 +111,10 @@ int main(int argc, char* argv[]){
 			std::cout << "Solvable";
 			log(1, ": ");
 			log(1, solveString);
-			std::cout << "\n";
+			std::cout << std::endl;
 		}
 		else
-			std::cout << "Unsolvable";
+			std::cout << "Unsolvable"  << std::endl;
 	}
 	else if(continueDeck){
 		if(random)
@@ -128,10 +128,10 @@ int main(int argc, char* argv[]){
 				std::cout << "Solvable";
 				log(1, ": ");
 				log(1, solveString);
-				std::cout << "\n";
+				std::cout << std::endl;
 			}
 			else
-				std::cout << "Unsolvable";
+				std::cout << "Unsolvable"  << std::endl;
 			checked++;
 		}while(!d.donePermuting() && (checked < decks || !decks));
 	}
@@ -144,10 +144,10 @@ int main(int argc, char* argv[]){
 				std::cout << "Solvable";
 				log(1, ": ");
 				log(1, solveString);
-				std::cout << "\n";
+				std::cout << std::endl;
 			}
 			else
-				std::cout << "Unsolvable";
+				std::cout << "Unsolvable"  << std::endl;
 			checked++;
 		}while(!d.donePermuting() && (checked < decks || !decks));
 	}

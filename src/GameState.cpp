@@ -20,9 +20,14 @@ size_t GameState::getHash() const {
     for(mult = 0; mult < TABLEAU_STACKS; mult++)
         ret += (mult + 1) * tableau[mult].size() * (visibleIndex[mult] + 1);
     ret += (mult++ + 1) * stock.size();
-    ret += cardsOnWaste * mult++;
-    for(size_t i = 0; i <= Card::Suit::SuitMax; i++, mult++)
-        ret += (mult + 1) * foundations[i].size();
+    
+    //did basic benchmarking with these removed - slightly faster
+    //perf indicated this function was very bad for performance, so I'll take everything I can get
+    //ret += cardsOnWaste * mult++; //not using - this will be 0 very often
+    /*for(size_t i = 0; i <= Card::Suit::SuitMax; i++)
+        ret += (mult++) * foundations[i].size();*/ //between checking the tableau and stock, this doesn't really give any more differentiating info
+    
+    
     log(3, "GameState hashed to ");
     log(3, std::to_string(ret));
     log(3, "\n");
@@ -70,6 +75,9 @@ void GameState::standardize(){
     for(size_t i = 1; i < TABLEAU_STACKS; i++)
         for(size_t j = i; j > 0 && tableau[j - 1] > tableau[j]; j--)
             std::swap(tableau[j], tableau[j - 1]), std::swap(visibleIndex[j], visibleIndex[j - 1]);
+            
+    if(!(cardsOnWaste % MOVED_TO_WASTE))
+		cardsOnWaste = 0;
 }
 
 GameState::GameState(Card const deck[(Card::Suit::SuitMax + 1) * (Card::Rank::RankMax + 1)]) : cardsOnWaste(0) {
@@ -107,8 +115,6 @@ std::vector<GameState> GameState::generateMoves() const {
 			GameState tmp(*this);
 			tmp.stock.erase(tmp.stock.begin() + i);
             tmp.cardsOnWaste = stock.size() - i - 1;
-            if(!(tmp.cardsOnWaste % MOVED_TO_WASTE))
-                tmp.cardsOnWaste = 0;
 			tmp.foundations[foundationIndex].push_back(stock[i]);
             tmp.moveSequence.push_back(stock[i]);
             tmp.moveSequence.push_back(foundations[foundationIndex].size() ? foundations[foundationIndex].back() : Card::FOUNDATION);
@@ -122,8 +128,6 @@ std::vector<GameState> GameState::generateMoves() const {
 				GameState tmp(*this);
 				tmp.stock.erase(tmp.stock.begin() + i);
                 tmp.cardsOnWaste = stock.size() - i - 1;
-                if(!(tmp.cardsOnWaste % MOVED_TO_WASTE))
-                    tmp.cardsOnWaste = 0;
 				tmp.tableau[j].push_back(stock[i]);
                 tmp.moveSequence.push_back(stock[i]);
                 tmp.moveSequence.push_back(tableau[j].back());
@@ -133,8 +137,6 @@ std::vector<GameState> GameState::generateMoves() const {
 				GameState tmp(*this);
 				tmp.stock.erase(tmp.stock.begin() + i);
                 tmp.cardsOnWaste = stock.size() - i - 1;
-                if(!(tmp.cardsOnWaste % MOVED_TO_WASTE))
-                    tmp.cardsOnWaste = 0;
 				tmp.tableau[j].push_back(stock[i]);
                 tmp.moveSequence.push_back(stock[i]);
                 tmp.moveSequence.push_back(Card::TABLEAU);
@@ -145,16 +147,23 @@ std::vector<GameState> GameState::generateMoves() const {
 	}
 
 	//2. move tableau card(s)
+	unsigned char tableausEmptied = 0;
+	for(size_t i = 0; i < TABLEAU_STACKS; i++)
+		if(!visibleIndex[i] && ((tableau[i].size() && tableau[i][0].getRank() == Card::Rank::KING) || !tableau[i].size()))
+			tableausEmptied++;
+	
 	for(size_t i = 0; i < TABLEAU_STACKS; i++){
 		for(size_t j = visibleIndex[i]; j < tableau[i].size(); j++){
 			//2a. move card(s) to other tableau stack
-			//only pointless case I can think of is moving a King
-			//from an empty space to another empty space
+			//pointless cases: 
+			//moving a King from an empty space to another empty space
+			//moving the bottom card from a tableau with 4 tableaus empty or starting with a visible king
+			
 			if(!(!visibleIndex[i] && !j && tableau[i][j].canStartTableau())){
 				for(size_t k = 0; k < TABLEAU_STACKS; k++){
 					if(k == i)
 						continue;
-					if(tableau[k].size() && tableau[i][j].canPlayOnTableau(tableau[k].back())){
+					if(tableau[k].size() && tableau[i][j].canPlayOnTableau(tableau[k].back()) && !(tableausEmptied >= 4 && !j)){
 						GameState tmp(*this);
 						tmp.tableau[i].erase(tmp.tableau[i].begin() + j, tmp.tableau[i].end());
 						for(size_t l = j; l < tableau[i].size(); l++)
@@ -236,9 +245,8 @@ std::vector<GameState> GameState::generateMoves() const {
 
 bool GameState::isTriviallySolvable() const {
 	//TODO: determine if these restrictions can be loosened
-	//for now, if there's <2 cards between the stock and waste
-	//and all tableau cards are visible, it can be solved
-	if(stock.size() > 2 || (stock.size() == 2 && cardsOnWaste != 1))
+	//for now, you must be able to access every card (all visible) to be solvable
+	if(!MOVED_TO_WASTE == 1 && (stock.size() > 2 || (stock.size() == 2 && cardsOnWaste != 1)))
 		return false;
 	for(size_t i = 0; i < TABLEAU_STACKS; i++)
 		if(tableau[i].size() && visibleIndex[i])
@@ -272,6 +280,7 @@ bool GameState::isDeadEnd() const {
 	return false;
 }
 
+//TODO: swap to using a priority queue instead of vector?
 std::string GameState::getHowToSolve() const {
 	//move inside of loop if isDeadEnd() can change
 	//(it currently can't)
@@ -279,12 +288,19 @@ std::string GameState::getHowToSolve() const {
 		return "";
 	std::vector<GameState> uncheckedStates;
 	std::unordered_set<GameState> seenStates;
-	seenStates.insert(*this);
+	
+	//don't need to save this state - there's no move we can do that would bring us back here
+	//seenStates.insert(*this);
+	
+	uncheckedStates.reserve(600);//haven't seen this cross 600 yet - passes 500 on rare occasion
+	seenStates.reserve(10000);//harder to say here - I've seen a case use >2GB RAM with >3M states
+							  //this at least will save some time resizing in the beginning
+	
 	uncheckedStates.push_back(*this);
-    size_t logAt = LOG_EVERY_X_STATES;
+    size_t logAt = LOG_EVERY_X_STATES - 1;
 	while(uncheckedStates.size()){
         if(seenStates.size() >= logAt){
-            log(1, std::to_string(seenStates.size()) + " states seen so far.\n");
+            log(1, std::to_string(seenStates.size() + 1) + " states seen so far.\n");
             log(1, std::to_string(uncheckedStates.size()) + " unchecked states currently.\n");
             logAt += LOG_EVERY_X_STATES;
         }
