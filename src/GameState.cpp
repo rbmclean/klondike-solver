@@ -37,8 +37,6 @@ size_t GameState::getHash() const {
 void GameState::standardize(){
     //play moves first so we don't have to sort more than once
 
-    //TODO: stock moves need to be looked at carefully
-
     //tableau moves to foundation
     unsigned char minFoundationRank = Card::Rank::RankMax;
     for(unsigned char i = 0; i <= Card::Suit::SuitMax; i++)
@@ -67,6 +65,29 @@ void GameState::standardize(){
                 return;//tail recursion
             }
         }
+	
+	//handle stock/waste
+	if(!(cardsOnWaste % MOVED_TO_WASTE)){
+		cardsOnWaste = 0;
+		//if playing the last card in the stock won't change what moves are available for other stock cards,
+		//and we can play it to the foundation without ever wanting to undo it,
+		//we should play it
+		//ex: 0 cards on waste, last card is CA. It should always be played
+		size_t foundationIndex = static_cast<size_t>(stock[0].getSuit());
+		if(stock.size() && stock[0].getRank() < playIfBelow && (!foundations[foundationIndex].size() && stock[0].canStartFoundation()) ||
+				(foundations[foundationIndex].size() && stock[0].canPlayOnFoundation(foundations[foundationIndex].back()))){
+			//log(1, "Special case:\n");
+			//log(1, getString());
+			moveSequence.push_back(stock[0]);
+            moveSequence.push_back(foundations[foundationIndex].size() ? foundations[foundationIndex].back() : Card::FOUNDATION);
+            foundations[foundationIndex].push_back(stock[0]);
+            stock.erase(stock.begin());
+            standardize();
+            //log(1, "End state:\n");
+            //log(1, getString());
+            return;//tail recursion
+		}
+	}
 
     //sort tableau
     //note: tableau is quite likely to already be sorted, or at least close
@@ -75,9 +96,6 @@ void GameState::standardize(){
     for(size_t i = 1; i < TABLEAU_STACKS; i++)
         for(size_t j = i; j > 0 && tableau[j - 1] > tableau[j]; j--)
             std::swap(tableau[j], tableau[j - 1]), std::swap(visibleIndex[j], visibleIndex[j - 1]);
-            
-    if(!(cardsOnWaste % MOVED_TO_WASTE))
-		cardsOnWaste = 0;
 }
 
 GameState::GameState(Card const deck[(Card::Suit::SuitMax + 1) * (Card::Rank::RankMax + 1)]) : cardsOnWaste(0) {
