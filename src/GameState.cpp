@@ -238,7 +238,7 @@ bool GameState::isTriviallySolvable() const {
 	//TODO: determine if these restrictions can be loosened
 	//for now, if there's <2 cards between the stock and waste
 	//and all tableau cards are visible, it can be solved
-	if(stock.size() >= 2 || (stock.size() == 2 && cardsOnWaste != 1))
+	if(stock.size() > 2 || (stock.size() == 2 && cardsOnWaste != 1))
 		return false;
 	for(size_t i = 0; i < TABLEAU_STACKS; i++)
 		if(tableau[i].size() && visibleIndex[i])
