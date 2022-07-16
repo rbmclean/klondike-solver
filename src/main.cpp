@@ -104,7 +104,8 @@ int main(int argc, char* argv[]){
 	}
 	std::string solveString;
 	if(singleDeck){
-		DeckGenerator d(singleDeck);
+		std::string deck(singleDeck);
+		DeckGenerator d(deck);
 		solveString = d.getStart().getHowToSolve();
 		if(solveString.size()){
 			log(0, "Solvable");
@@ -118,7 +119,8 @@ int main(int argc, char* argv[]){
 	else if(continueDeck){
 		if(random)
 			std::cout << "Note: ignoring -r since -c was given" << std::endl;
-		DeckGenerator d(continueDeck);
+		std::string deck(continueDeck);
+		DeckGenerator d(deck);
 		uint64_t checked = 0;
 		do{
 			solveString = d.getStart().getHowToSolve();
