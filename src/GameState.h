@@ -38,4 +38,5 @@ public:
 	std::string getHowToSolve() const;
 	bool operator==(const GameState& other) const;
 	std::string getString() const;
+	GameState removeMoves() const;
 };

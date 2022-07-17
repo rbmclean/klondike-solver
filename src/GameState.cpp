@@ -339,7 +339,7 @@ std::string GameState::getHowToSolve() const {
                     ret += i.getString();
                 return ret;
             }
-			if(seenStates.insert(i).second)
+			if(seenStates.insert(i.removeMoves()).second)
 				uncheckedStates.push_back(i);
 		}
 	}
@@ -364,6 +364,13 @@ bool GameState::operator==(const GameState& other) const {
 		if(foundations[i] != other.foundations[i])
 			return false;
 	return true;
+}
+
+GameState GameState::removeMoves() const {
+	GameState ret(*this);
+	ret.moveSequence.clear();
+	ret.moveSequence.shrink_to_fit();
+	return ret;
 }
 
 std::string GameState::getString() const {
